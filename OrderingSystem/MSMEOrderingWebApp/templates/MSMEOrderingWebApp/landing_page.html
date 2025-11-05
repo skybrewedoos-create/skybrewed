@@ -1,3 +1,5 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ business.business_name|default:"Business" }} - Online Store</title>
 
-    {% load static %}
+    {% if business and business.logo %}
+        <link rel="icon" type="image/png" href="{{ business.logo.url }}">
+    {% else %}
+        <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    {% endif %}
+
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
