@@ -20,11 +20,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "insecure-fallback-key")
 
 DEBUG = os.environ.get("DEBUG", "False").lower() in ["true", "1"]
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "therebloc.online,www.therebloc.online,therebloc.onrender.com").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "skybrewed.online,www.skybrewed.online,skybrewed.onrender.com").split(",")
 
 # CSRF Protection for HTTPS
 CSRF_TRUSTED_ORIGINS = [
-    'https://therebloc.onrender.com',
+    'https://skybrewed.onrender.com',
 ]
 
 # Add your local development origins if needed
@@ -173,10 +173,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'therebloc.oos@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'yrgb xtoi upfu xhxn')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'therebloc.oos@gmail.com')
-
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 # Detect Render environment
 IS_RENDER = os.environ.get('RENDER', False)
 
@@ -184,7 +183,7 @@ if IS_RENDER:
     # CRITICAL FOR RENDER
     SECURE_SSL_REDIRECT = False  # Render handles SSL
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ALLOWED_HOSTS = ['therebloc.online', 'www.therebloc.online', 'therebloc.onrender.com']
+    ALLOWED_HOSTS = ['skybrewed.online', 'www.skybrewed.online', 'skybrewed.onrender.com']
     DEBUG = False
 else:
     # Local development
