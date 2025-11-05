@@ -1498,7 +1498,7 @@
                                     <th scope="col">Variation</th>
                                     <th scope="col">Price</th>
                                     <th scope="col">Stocks</th>
-                                    <th scope="col">Available</th>
+                                    <th scope="col">Availability</th>
                                     <th scope="col">Added</th>
                                     <th scope="col">Last Modified</th>
                                     <th scope="col">Actions</th>
@@ -1557,7 +1557,7 @@
                                                                    {% if product.available %}checked{% endif %}>
                                                             <label class="form-check-label availability-label-{{ product.id }}">
                                                                 {% if product.available %}
-                                                                    <span class="available-color">Availability</span>
+                                                                    <span class="available-color">Available</span>
                                                                 {% else %}
                                                                     <span class="text-muted">Unavailable</span>
                                                                 {% endif %}
