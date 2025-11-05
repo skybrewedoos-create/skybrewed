@@ -465,10 +465,10 @@ def landing_page(request):
     # ✅ Fallback for missing business record
     if not business:
         class DummyBusiness:
-            business_name = "Your Business Name"
-            address = "Not specified"
-            contact_number = "N/A"
-            email = "N/A"
+            business_name = "Business Name"
+            address = "Your business address"
+            contact_number = "+63 9XX XXX XXXX"
+            email = "emailaddress@gmail.com"
             opening_time = None
             closing_time = None
             logo = None
