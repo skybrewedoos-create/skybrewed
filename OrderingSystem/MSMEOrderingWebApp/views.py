@@ -4768,20 +4768,24 @@ def delete_category(request, category_id):
 		
 @login_required_session(allowed_roles=['owner'])
 def edit_product_price(request):
-    # ✅ Check if it's an AJAX request
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type.startswith('multipart/form-data'):
-        try:
+    """
+    Handles product edits (supports both AJAX and normal form POST),
+    including image uploads even if the product initially had no image.
+    """
+    try:
+        # ✅ Detect AJAX or multipart requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type.startswith('multipart/form-data'):
             product_id = request.POST.get('product_id')
             new_price = request.POST.get('new_price')
             new_stocks = request.POST.get('new_stocks')
             new_description = request.POST.get('new_description')
             new_name = request.POST.get('new_name')
             new_variation = request.POST.get('new_variation')
-            new_image = request.FILES.get('new_image')  # ✅ Added image upload support
+            new_image = request.FILES.get('new_image')  # ✅ Handle image upload
 
             product = Products.objects.get(id=product_id)
 
-            # ✅ Track image change
+            # ✅ Track and update image change
             if new_image:
                 ProductEditHistory.objects.create(
                     product=product,
@@ -4792,7 +4796,7 @@ def edit_product_price(request):
                 product.image = new_image
 
             # ✅ Track variation changes
-            if new_variation is not None and str(product.variation_name) != str(new_variation):
+            if new_variation and str(product.variation_name) != str(new_variation):
                 ProductEditHistory.objects.create(
                     product=product,
                     field="variation_name",
@@ -4802,7 +4806,7 @@ def edit_product_price(request):
                 product.variation_name = new_variation
 
             # ✅ Track name changes
-            if new_name is not None and str(product.name) != str(new_name):
+            if new_name and str(product.name) != str(new_name):
                 ProductEditHistory.objects.create(
                     product=product,
                     field="name",
@@ -4812,7 +4816,7 @@ def edit_product_price(request):
                 product.name = new_name
 
             # ✅ Track price changes
-            if new_price is not None and str(product.price) != str(new_price):
+            if new_price and str(product.price) != str(new_price):
                 ProductEditHistory.objects.create(
                     product=product,
                     field="price",
@@ -4822,7 +4826,7 @@ def edit_product_price(request):
                 product.price = new_price
 
             # ✅ Track stocks changes
-            if new_stocks is not None and str(product.stocks) != str(new_stocks):
+            if new_stocks and str(product.stocks) != str(new_stocks):
                 ProductEditHistory.objects.create(
                     product=product,
                     field="stocks",
@@ -4832,7 +4836,7 @@ def edit_product_price(request):
                 product.stocks = new_stocks
 
             # ✅ Track description changes
-            if new_description is not None and str(product.description or "") != str(new_description):
+            if new_description and str(product.description or "") != str(new_description):
                 ProductEditHistory.objects.create(
                     product=product,
                     field="description",
@@ -4841,7 +4845,10 @@ def edit_product_price(request):
                 )
                 product.description = new_description
 
-            product.save()
+            product.save()  # ✅ Save before retrieving .url
+
+            # ✅ Ensure correct image URL after saving
+            image_url = product.image.url if product.image else None
 
             return JsonResponse({
                 'success': True,
@@ -4854,103 +4861,93 @@ def edit_product_price(request):
                     'description': product.description or '',
                     'variation_name': product.variation_name,
                     'track_stocks': product.track_stocks,
-                    'image_url': product.image.url if product.image else None,
+                    'image_url': image_url,
                 }
             })
 
-        except Products.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'error': 'Product not found.'
-            }, status=404)
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=400)
-
-    # ✅ Fallback for non-AJAX form submissions
-    else:
-        if request.method == 'POST':
+        # ✅ Handle non-AJAX form submissions
+        elif request.method == 'POST':
             product_id = request.POST.get('product_id')
             new_price = request.POST.get('new_price')
             new_stocks = request.POST.get('new_stocks')
             new_description = request.POST.get('new_description')
             new_name = request.POST.get('new_name')
             new_variation = request.POST.get('new_variation')
-            new_image = request.FILES.get('new_image')  # ✅ Added image upload
+            new_image = request.FILES.get('new_image')
 
-            try:
-                product = Products.objects.get(id=product_id)
+            product = Products.objects.get(id=product_id)
 
-                # ✅ Track image change
-                if new_image:
-                    ProductEditHistory.objects.create(
-                        product=product,
-                        field="image",
-                        old_value=product.image.url if product.image else "None",
-                        new_value=new_image.name,
-                    )
-                    product.image = new_image
+            # ✅ Handle image upload
+            if new_image:
+                ProductEditHistory.objects.create(
+                    product=product,
+                    field="image",
+                    old_value=product.image.url if product.image else "None",
+                    new_value=new_image.name,
+                )
+                product.image = new_image
 
-                # ✅ Track variation changes
-                if new_variation is not None and str(product.variation_name) != str(new_variation):
-                    ProductEditHistory.objects.create(
-                        product=product,
-                        field="variation_name",
-                        old_value=product.variation_name,
-                        new_value=new_variation,
-                    )
-                    product.variation_name = new_variation
+            if new_variation and str(product.variation_name) != str(new_variation):
+                ProductEditHistory.objects.create(
+                    product=product,
+                    field="variation_name",
+                    old_value=product.variation_name,
+                    new_value=new_variation,
+                )
+                product.variation_name = new_variation
 
-                # ✅ Track name changes
-                if new_name is not None and str(product.name) != str(new_name):
-                    ProductEditHistory.objects.create(
-                        product=product,
-                        field="name",
-                        old_value=product.name,
-                        new_value=new_name,
-                    )
-                    product.name = new_name
+            if new_name and str(product.name) != str(new_name):
+                ProductEditHistory.objects.create(
+                    product=product,
+                    field="name",
+                    old_value=product.name,
+                    new_value=new_name,
+                )
+                product.name = new_name
 
-                # ✅ Track price changes
-                if new_price is not None and str(product.price) != str(new_price):
-                    ProductEditHistory.objects.create(
-                        product=product,
-                        field="price",
-                        old_value=product.price,
-                        new_value=new_price,
-                    )
-                    product.price = new_price
+            if new_price and str(product.price) != str(new_price):
+                ProductEditHistory.objects.create(
+                    product=product,
+                    field="price",
+                    old_value=product.price,
+                    new_value=new_price,
+                )
+                product.price = new_price
 
-                # ✅ Track stocks changes
-                if new_stocks is not None and str(product.stocks) != str(new_stocks):
-                    ProductEditHistory.objects.create(
-                        product=product,
-                        field="stocks",
-                        old_value=product.stocks,
-                        new_value=new_stocks,
-                    )
-                    product.stocks = new_stocks
+            if new_stocks and str(product.stocks) != str(new_stocks):
+                ProductEditHistory.objects.create(
+                    product=product,
+                    field="stocks",
+                    old_value=product.stocks,
+                    new_value=new_stocks,
+                )
+                product.stocks = new_stocks
 
-                # ✅ Track description changes
-                if new_description is not None and str(product.description or "") != str(new_description):
-                    ProductEditHistory.objects.create(
-                        product=product,
-                        field="description",
-                        old_value=product.description or "",
-                        new_value=new_description,
-                    )
-                    product.description = new_description
+            if new_description and str(product.description or "") != str(new_description):
+                ProductEditHistory.objects.create(
+                    product=product,
+                    field="description",
+                    old_value=product.description or "",
+                    new_value=new_description,
+                )
+                product.description = new_description
 
-                product.save()
-                messages.success(request, "Product updated successfully.")
+            product.save()
+            messages.success(request, "Product updated successfully.")
 
-            except Products.DoesNotExist:
-                messages.error(request, "Product not found.")
-            except Exception as e:
-                messages.error(request, f"Error updating product: {e}")
+            return redirect('inventory')
 
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=400)
+
+    except Products.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Product not found.'}, status=404)
+
+    except Exception as e:
+        # Fallback for both AJAX and standard requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+        messages.error(request, f"Error updating product: {e}")
         return redirect('inventory')
 		
 @login_required_session(allowed_roles=['owner'])
