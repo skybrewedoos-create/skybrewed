@@ -1325,52 +1325,80 @@
 
                             <!-- Product Name, Category, and Price -->
                             <div class="row g-3">
+                                <!-- Product Name -->
                                 <div class="col-12 col-md-12 col-lg-6">
                                     <label for="product_name" class="form-label">
                                         <i class="fas fa-box"></i> Product Name
                                     </label>
-                                    <input type="text" id="product_name" name="product_name" class="form-control" 
+                                    <input 
+                                        type="text" 
+                                        id="product_name" 
+                                        name="product_name" 
+                                        class="form-control" 
                                         placeholder="Enter product name" 
-                                        value="{{ form_data.product_name|default:'' }}" required>
+                                        value="{{ form_data.product_name|default:'' }}" 
+                                        required
+                                    >
                                 </div>
 
+                                <!-- Product Category -->
                                 <div class="col-12 col-md-12 col-lg-6">
                                     <label for="product_category" class="form-label">
                                         <i class="fas fa-tags"></i> Product Category
                                     </label>
 
                                     <div class="dropdown w-100">
-                                        <button class="form-select text-start d-flex justify-content-between align-items-center"
-                                                type="button"
-                                                id="categoryDropdown"
-                                                data-bs-toggle="dropdown"
-                                                aria-expanded="false">
+                                        <button 
+                                            class="form-select text-start d-flex justify-content-between align-items-center"
+                                            type="button"
+                                            id="categoryDropdown"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                        >
                                             <span id="selectedCategoryText">-- Select Category --</span>
                                             <i class="fas fa-chevron-down ms-2"></i>
                                         </button>
 
-                                        <ul class="dropdown-menu w-100 slim-dropdown" aria-labelledby="categoryDropdown" id="categoryList">
+                                        <ul 
+                                            class="dropdown-menu w-100 slim-dropdown" 
+                                            aria-labelledby="categoryDropdown" 
+                                            id="categoryList"
+                                        >
                                             {% for category in categories %}
                                                 <li class="d-flex justify-content-between align-items-center dropdown-item-slim">
-                                                    <span class="category-name" data-id="{{ category.id }}">{{ category.name }}</span>
-                                                    <button type="button"
-                                                            class="btn btn-sm btn-outline-danger btn-delete-slim"
-                                                            title="Delete category"
-                                                            onclick="deleteCategory({{ category.id }}, '{{ category.name }}')">
+                                                    <span class="category-name" data-id="{{ category.id }}">
+                                                        {{ category.name }}
+                                                    </span>
+                                                    <button 
+                                                        type="button"
+                                                        class="btn btn-sm btn-outline-danger btn-delete-slim"
+                                                        title="Delete category"
+                                                        onclick="deleteCategory({{ category.id }}, '{{ category.name }}')"
+                                                    >
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                 </li>
                                             {% endfor %}
                                             <li><hr class="dropdown-divider my-1"></li>
                                             <li>
-                                                <button class="dropdown-item text-success py-2" type="button" onclick="openAddCategoryModal()">
-                                                    <i class="fas fa-plus-circle me-2"></i> Add New Category
+                                                <button 
+                                                    class="dropdown-item text-success py-2" 
+                                                    type="button" 
+                                                    onclick="openAddCategoryModal()"
+                                                >
+                                                    <i class="fas fa-plus-circle me-2"></i>
+                                                    Add New Category
                                                 </button>
                                             </li>
                                         </ul>
                                     </div>
 
-                                    <input type="hidden" name="product_category" id="selectedCategoryId" required>
+                                    <input 
+                                        type="hidden" 
+                                        name="product_category" 
+                                        id="selectedCategoryId" 
+                                        required
+                                    >
                                 </div>
 
 
@@ -1614,7 +1642,7 @@
                                                                     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), var(--accent-color));
                                                                 ">
                                                                     <span style="font-size: 1.5rem; font-weight: 700; color: #fff;">
-                                                                        {{ product.name}}
+                                                                        {{ product.name|first|upper }}
                                                                     </span>
                                                                 </div>
                                                             {% endif %}
