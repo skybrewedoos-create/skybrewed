@@ -4768,20 +4768,30 @@ def delete_category(request, category_id):
 		
 @login_required_session(allowed_roles=['owner'])
 def edit_product_price(request):
-    # Check if it's an AJAX request
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+    # ✅ Check if it's an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type.startswith('multipart/form-data'):
         try:
-            data = json.loads(request.body)
-            product_id = data.get('product_id')
-            new_price = data.get('new_price')
-            new_stocks = data.get('new_stocks')
-            new_description = data.get('new_description')
-            new_name = data.get('new_name')
-            new_variation = data.get('new_variation')
+            product_id = request.POST.get('product_id')
+            new_price = request.POST.get('new_price')
+            new_stocks = request.POST.get('new_stocks')
+            new_description = request.POST.get('new_description')
+            new_name = request.POST.get('new_name')
+            new_variation = request.POST.get('new_variation')
+            new_image = request.FILES.get('new_image')  # ✅ Added image upload support
 
             product = Products.objects.get(id=product_id)
 
-            # Track variation changes
+            # ✅ Track image change
+            if new_image:
+                ProductEditHistory.objects.create(
+                    product=product,
+                    field="image",
+                    old_value=product.image.url if product.image else "None",
+                    new_value=new_image.name,
+                )
+                product.image = new_image
+
+            # ✅ Track variation changes
             if new_variation is not None and str(product.variation_name) != str(new_variation):
                 ProductEditHistory.objects.create(
                     product=product,
@@ -4791,7 +4801,7 @@ def edit_product_price(request):
                 )
                 product.variation_name = new_variation
 
-            # Track name changes
+            # ✅ Track name changes
             if new_name is not None and str(product.name) != str(new_name):
                 ProductEditHistory.objects.create(
                     product=product,
@@ -4801,7 +4811,7 @@ def edit_product_price(request):
                 )
                 product.name = new_name
 
-            # Track price changes
+            # ✅ Track price changes
             if new_price is not None and str(product.price) != str(new_price):
                 ProductEditHistory.objects.create(
                     product=product,
@@ -4811,7 +4821,7 @@ def edit_product_price(request):
                 )
                 product.price = new_price
 
-            # Track stocks changes
+            # ✅ Track stocks changes
             if new_stocks is not None and str(product.stocks) != str(new_stocks):
                 ProductEditHistory.objects.create(
                     product=product,
@@ -4821,7 +4831,7 @@ def edit_product_price(request):
                 )
                 product.stocks = new_stocks
 
-            # Track description changes
+            # ✅ Track description changes
             if new_description is not None and str(product.description or "") != str(new_description):
                 ProductEditHistory.objects.create(
                     product=product,
@@ -4843,7 +4853,8 @@ def edit_product_price(request):
                     'stocks': product.stocks,
                     'description': product.description or '',
                     'variation_name': product.variation_name,
-                    'track_stocks': product.track_stocks
+                    'track_stocks': product.track_stocks,
+                    'image_url': product.image.url if product.image else None,
                 }
             })
 
@@ -4857,18 +4868,30 @@ def edit_product_price(request):
                 'success': False,
                 'error': str(e)
             }, status=400)
+
+    # ✅ Fallback for non-AJAX form submissions
     else:
-        # Fallback for non-AJAX requests
         if request.method == 'POST':
             product_id = request.POST.get('product_id')
             new_price = request.POST.get('new_price')
             new_stocks = request.POST.get('new_stocks')
             new_description = request.POST.get('new_description')
             new_name = request.POST.get('new_name')
-            new_variation = request.POST.get('new_variation')  # ✅ Added
+            new_variation = request.POST.get('new_variation')
+            new_image = request.FILES.get('new_image')  # ✅ Added image upload
 
             try:
                 product = Products.objects.get(id=product_id)
+
+                # ✅ Track image change
+                if new_image:
+                    ProductEditHistory.objects.create(
+                        product=product,
+                        field="image",
+                        old_value=product.image.url if product.image else "None",
+                        new_value=new_image.name,
+                    )
+                    product.image = new_image
 
                 # ✅ Track variation changes
                 if new_variation is not None and str(product.variation_name) != str(new_variation):
@@ -4880,6 +4903,7 @@ def edit_product_price(request):
                     )
                     product.variation_name = new_variation
 
+                # ✅ Track name changes
                 if new_name is not None and str(product.name) != str(new_name):
                     ProductEditHistory.objects.create(
                         product=product,
@@ -4889,6 +4913,7 @@ def edit_product_price(request):
                     )
                     product.name = new_name
 
+                # ✅ Track price changes
                 if new_price is not None and str(product.price) != str(new_price):
                     ProductEditHistory.objects.create(
                         product=product,
@@ -4898,6 +4923,7 @@ def edit_product_price(request):
                     )
                     product.price = new_price
 
+                # ✅ Track stocks changes
                 if new_stocks is not None and str(product.stocks) != str(new_stocks):
                     ProductEditHistory.objects.create(
                         product=product,
@@ -4907,6 +4933,7 @@ def edit_product_price(request):
                     )
                     product.stocks = new_stocks
 
+                # ✅ Track description changes
                 if new_description is not None and str(product.description or "") != str(new_description):
                     ProductEditHistory.objects.create(
                         product=product,
@@ -4921,9 +4948,11 @@ def edit_product_price(request):
 
             except Products.DoesNotExist:
                 messages.error(request, "Product not found.")
+            except Exception as e:
+                messages.error(request, f"Error updating product: {e}")
 
         return redirect('inventory')
-
+		
 @login_required_session(allowed_roles=['owner'])
 @require_POST
 def delete_product(request, product_id):
