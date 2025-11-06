@@ -3347,7 +3347,40 @@
 
         setInterval(checkProductAvailability, 1000);
     });
+
     </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const addToCartButtons = document.querySelectorAll(".btn-add-to-cart");
+  const loginModal = document.getElementById("loginNoticeModal");
+
+  addToCartButtons.forEach(button => {
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      // Check if user is logged in (replace this with your Django context variable)
+      const isLoggedIn = "{{ request.user.is_authenticated|yesno:'true,false' }}" === "true";
+
+      if (!isLoggedIn) {
+        // Show login notice modal
+        loginModal.classList.add("show");
+        return;
+      }
+
+      // Otherwise, proceed with normal add-to-cart action
+      console.log("User is logged in — proceed to add item to cart.");
+    });
+  });
+
+  // Close modal when clicking outside content
+  loginModal.addEventListener("click", (e) => {
+    if (e.target === loginModal) {
+      loginModal.classList.remove("show");
+    }
+  });
+});
+</script>
 
 </body>
 </html>
