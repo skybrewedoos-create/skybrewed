@@ -1,5 +1,5 @@
 {% extends 'MSMEOrderingWebApp/business_owner_base.html' %}
-
+{% load static %}
 {% block title %}Inventory Management{% endblock %}
 
 {% block content %}
@@ -1711,7 +1711,7 @@
                 </form>
             </div>
 
-            <!-- Edit Product Modal -->
+<!-- Edit Product Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -1727,6 +1727,13 @@
                 <input type="hidden" id="editProductId">
                 <input type="hidden" id="editType">
 
+                <!-- Product Image -->
+                <div class="mb-3">
+                    <label for="editProductImage" class="form-label fw-semibold">Product Image</label>
+                    <input type="file" class="form-control" id="editProductImage" name="new_image" accept=".jpg,.jpeg,.png,.webp">
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Upload new image to replace current</small>
+                </div>
+                
                 <!-- Product Name -->
                 <div class="mb-3">
                     <label for="editProductName" class="form-label">Product Name</label>
@@ -1761,7 +1768,7 @@
             <!-- Modal Footer -->
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveEditBtn">Save Changes</button>
+                <button type="button" class="btn btn-success" onclick="saveEditedProduct()">Save Changes</button>
             </div>
         </div>
     </div>
@@ -2263,16 +2270,15 @@
         document.getElementById("editVariationName").disabled = false;
         document.getElementById("editProductPrice").value = price;
         document.getElementById("editProductStocks").value = stocks;
-    
-        // ✅ Populate description field
         document.getElementById("editProductDescription").value = description || "";
-    
+
+        // ✅ Handle stock visibility
         const stockGroup = document.getElementById("editProductStocksGroup");
         const stockInput = document.getElementById("editProductStocks");
-    
+
         let ts = String(trackStocks).trim().toLowerCase();
         const isTrackingEnabled = (ts === "true" || ts === "1" || ts === "yes" || ts === "on" || ts === "checked");
-    
+
         if (!isTrackingEnabled) {
             stockGroup.style.display = "none";
             stockInput.required = false;
@@ -2280,27 +2286,29 @@
             stockGroup.style.display = "block";
             stockInput.required = true;
         }
-    
+
+        // ✅ Clear previous image file input
+        const imageInput = document.getElementById("editProductImage");
+        if (imageInput) imageInput.value = '';
+
         const modal = new bootstrap.Modal(document.getElementById("editModal"));
         modal.show();
     }
-    
-    // Close Edit Modal
+
+    // ✅ Close Edit Modal
     function closeEditModal() {
         const modal = bootstrap.Modal.getInstance(document.getElementById("editModal"));
-        if (modal) {
-            modal.hide();
-        }
+        if (modal) modal.hide();
     }
-    
-    // Form validation
+
+    // ✅ Form validation
     document.addEventListener('DOMContentLoaded', function () {
         const forms = document.querySelectorAll('form');
         forms.forEach(form => {
             form.addEventListener('submit', function (e) {
                 const requiredFields = form.querySelectorAll('[required]');
                 let isValid = true;
-    
+
                 requiredFields.forEach(field => {
                     if (!field.value.trim()) {
                         field.classList.add('is-invalid');
@@ -2309,7 +2317,7 @@
                         field.classList.remove('is-invalid');
                     }
                 });
-    
+
                 if (!isValid) {
                     e.preventDefault();
                     alert('Please fill in all required fields.');
@@ -2317,6 +2325,41 @@
             });
         });
     });
+
+    // ✅ Save Edited Product (AJAX)
+    function saveEditedProduct() {
+        const formData = new FormData();
+        formData.append('product_id', document.getElementById('editProductId').value);
+        formData.append('new_name', document.getElementById('editProductName').value);
+        formData.append('new_price', document.getElementById('editProductPrice').value);
+        formData.append('new_stocks', document.getElementById('editProductStocks').value);
+        formData.append('new_description', document.getElementById('editProductDescription').value);
+        formData.append('new_variation', document.getElementById('editVariationName').value);
+
+        const newImage = document.getElementById('editProductImage').files[0];
+        if (newImage) formData.append('new_image', newImage);
+
+        fetch("{% url 'edit_product_price' %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ ' + data.message);
+                location.reload();
+            } else {
+                alert('❌ ' + (data.error || 'Failed to update product.'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+        });
+    }
 
     function toggleStocksInputs() {
         const isTrackingEnabled = document.getElementById('toggleStocks').checked;
