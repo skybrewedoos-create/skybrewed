@@ -2691,59 +2691,77 @@ function openAddCategoryModal() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const saveEditBtn = document.getElementById('saveEditBtn');
+    const editForm = document.getElementById('editProductForm');
     
-    if (saveEditBtn) {
-        saveEditBtn.addEventListener('click', function() {
-            const productId = document.getElementById('editProductId').value;
-            const productName = document.getElementById('editProductName').value;
-            const productPrice = document.getElementById('editProductPrice').value;
-            const productStocks = document.getElementById('editProductStocks').value;
-            const productDescription = document.getElementById('editProductDescription').value;
-            const productVariation = document.getElementById('editVariationName').value;
-
-            if (!productName || !productPrice) {
-                toastr.error('Please fill in all required fields');
-                return;
-            }
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
             
+            const formData = new FormData(this);
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
             
             fetch("{% url 'edit_product_price' %}", {
                 method: 'POST',
+                body: formData,
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrftoken
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    new_name: productName,
-                    new_price: productPrice,
-                    new_stocks: productStocks,
-                    new_description: productDescription,
-                    new_variation: productVariation
-                })
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
             .then(response => response.json())
             .then(data => {
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
                 if (data.success) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
                     modal.hide();
                     toastr.success(data.message);
                     
-                    // Find the EXACT row for this specific product ID
+                    const productId = formData.get('product_id');
+                    const productName = data.product.name;
+                    const productPrice = data.product.price;
+                    const productStocks = data.product.stocks;
+                    const productVariation = data.product.variation_name;
+                    const imageUrl = data.product.image_url;
+                    
+                    // Find and update the specific product row
                     const allRows = document.querySelectorAll('.product-row');
                     allRows.forEach(row => {
-                        // Find the edit button that contains this exact product ID
                         const editBtn = row.querySelector(`[onclick*="'${productId}'"]`);
-                        if (!editBtn) return; // Skip if this isn't the right row
+                        if (!editBtn) return;
                         
                         const cells = Array.from(row.querySelectorAll('td'));
-                        
-                        // Determine if this is the first row with rowspan (has image/name cells)
                         const hasRowspan = row.querySelector('td[rowspan]') !== null;
                         
-                        // Update Product Name (only for rows with rowspan - grouped products)
+                        // Update Product Image (if present)
+                        if (imageUrl) {
+                            cells.forEach(cell => {
+                                const imgElement = cell.querySelector('img');
+                                if (imgElement) {
+                                    imgElement.src = imageUrl;
+                                }
+                                
+                                // Update fallback initial if no image exists
+                                const fallbackDiv = cell.querySelector('div[style*="background: linear-gradient"]');
+                                if (fallbackDiv && imageUrl) {
+                                    // Replace fallback with actual image
+                                    cell.querySelector('div[style*="width: 60px"]').innerHTML = `
+                                        <img src="${imageUrl}" alt="${productName}" 
+                                            style="max-width: 100%; max-height: 100%; object-fit: cover; border-radius: 8px;">
+                                    `;
+                                }
+                            });
+                        }
+                        
+                        // Update Product Name
                         if (hasRowspan) {
                             cells.forEach(cell => {
                                 if (cell.hasAttribute('rowspan') && 
@@ -2753,7 +2771,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             });
                         } else {
-                            // For single products or non-first variation rows
                             if (cells[1] && !cells[1].querySelector('img') && 
                                 !cells[1].querySelector('div') && 
                                 !cells[1].hasAttribute('rowspan') &&
@@ -2761,9 +2778,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 cells[1].textContent = productName.charAt(0).toUpperCase() + productName.slice(1);
                             }
                         }
-
-                        // Find cells by their content/class, not by index
-                        // This works regardless of rowspan
+                        
+                        // Update other fields
                         cells.forEach((cell, index) => {
                             const text = cell.textContent.trim();
                             const hasInput = cell.querySelector('input');
@@ -2778,11 +2794,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 !text.includes('/') && !text.includes('•') &&
                                 !text.toLowerCase().includes('available') &&
                                 !text.toLowerCase().includes('not tracked') &&
-                                !text.match(/^\d+$/) && // Not just a number (stock)
-                                text.toLowerCase() !== productName.toLowerCase() && // Not the product name
+                                !text.match(/^\d+$/) &&
+                                text.toLowerCase() !== productName.toLowerCase() &&
                                 cell.getAttribute('style')?.includes('background-color: #f0f0f0ff')) {
                                 
-                                // This is likely the variation cell
                                 const prevCell = cells[index - 1];
                                 if (prevCell && (prevCell.hasAttribute('rowspan') || 
                                     prevCell.textContent.trim().toLowerCase() === productName.toLowerCase())) {
@@ -2804,15 +2819,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 !text.toLowerCase().includes('available') &&
                                 (text.match(/^\d+$/) || text.toLowerCase().includes('not tracked'))) {
                                 
-                                // Check if the next cell is the availability toggle (to confirm this is stock cell)
                                 const nextCell = cells[index + 1];
                                 if (nextCell && nextCell.querySelector('.form-check-input')) {
                                     cell.textContent = productStocks;
                                 }
                             }
                         });
-
-                        // Update edit button onclick with proper escaping
+                        
+                        // Update edit button onclick
                         const editButton = row.querySelector('.btn-outline-primary');
                         if (editButton) {
                             const variationName = (data.product.variation_name || '').replace(/'/g, "\\'");
@@ -2831,6 +2845,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
                 console.error('Error:', error);
                 toastr.error('An error occurred while updating the product');
             });
