@@ -461,20 +461,7 @@ def route_home(request):
 def landing_page(request):
     business = BusinessDetails.objects.first()
     customization = get_or_create_customization()
-
-    # ✅ Fallback for missing business record
-    if not business:
-        class DummyBusiness:
-            business_name = "Business Name"
-            address = "Your business address"
-            contact_number = "+63 9XX XXX XXXX"
-            email = "emailaddress@gmail.com"
-            opening_time = None
-            closing_time = None
-            logo = None
-        business = DummyBusiness()
-
-    # Fetch all products
+    # Fetch all products to handle real-time updates
     products = Products.objects.select_related('category').all()
     categories = ProductCategory.objects.all()
 
@@ -491,6 +478,8 @@ def landing_page(request):
             p for p in group 
             if p.available and (not p.track_stocks or p.stocks > 0)
         ]
+        
+        # Skip if no available variations
         if not available_variations:
             continue
             
@@ -523,28 +512,13 @@ def landing_page(request):
     # Sort best sellers by sold_count and take top 3
     best_seller_products = sorted(best_seller_products, key=lambda x: x['sold_count'], reverse=True)[:3]
 
-    # --- PAGINATION (10 PRODUCTS PER PAGE) ---
-    paginator = Paginator(unique_products, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # --- AJAX HANDLER ---
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html = render_to_string(
-            'MSMEOrderingWebApp/customer_homegrid.html',
-            {'products': page_obj.object_list, 'page_obj': page_obj},
-            request=request
-        )
-        return JsonResponse({'html': html})
-
-    # ✅ Safe time formatting
+    # Format times to HH:MM:SS (ignore microseconds)
     current_time = datetime.now().strftime("%H:%M:%S")
-    opening_time = business.opening_time.strftime("%H:%M:%S") if business.opening_time else None
-    closing_time = business.closing_time.strftime("%H:%M:%S") if business.closing_time else None
+    opening_time = business.opening_time.strftime("%H:%M:%S")
+    closing_time = business.closing_time.strftime("%H:%M:%S")
 
     return render(request, 'MSMEOrderingWebApp/landing_page.html', {
-        'products': page_obj.object_list,
-        'page_obj': page_obj,
+        'products': unique_products,
         'categories': categories,
         'all_products': list(products.values('name', 'variation_name', 'price', 'stocks', 'track_stocks', 'description')),
         'customization': customization,
