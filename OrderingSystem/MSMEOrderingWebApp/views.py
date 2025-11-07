@@ -4773,83 +4773,85 @@ def edit_product_price(request):
     including image uploads even if the product initially had no image.
     """
     try:
-        # ✅ Detect AJAX or multipart requests
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type.startswith('multipart/form-data'):
-            product_id = request.POST.get('product_id')
-            new_price = request.POST.get('new_price')
-            new_stocks = request.POST.get('new_stocks')
-            new_description = request.POST.get('new_description')
-            new_name = request.POST.get('new_name')
-            new_variation = request.POST.get('new_variation')
-            new_image = request.FILES.get('new_image')  # ✅ Handle image upload
+        # ✅ Handle both AJAX and regular form submissions
+        product_id = request.POST.get('product_id')
+        new_price = request.POST.get('new_price')
+        new_stocks = request.POST.get('new_stocks')
+        new_description = request.POST.get('new_description')
+        new_name = request.POST.get('new_name')
+        new_variation = request.POST.get('new_variation')
+        new_image = request.FILES.get('new_image')  # ✅ Handle image upload
 
-            product = Products.objects.get(id=product_id)
+        product = Products.objects.get(id=product_id)
 
-            # ✅ Track and update image change
-            if new_image:
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="image",
-                    old_value=product.image.url if product.image else "None",
-                    new_value=new_image.name,
-                )
-                product.image = new_image
+        # ✅ Track and update image change
+        if new_image:
+            old_image_value = product.image.url if product.image else "None"
+            ProductEditHistory.objects.create(
+                product=product,
+                field="image",
+                old_value=old_image_value,
+                new_value=new_image.name,
+            )
+            product.image = new_image
 
-            # ✅ Track variation changes
-            if new_variation and str(product.variation_name) != str(new_variation):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="variation_name",
-                    old_value=product.variation_name,
-                    new_value=new_variation,
-                )
-                product.variation_name = new_variation
+        # ✅ Track variation changes
+        if new_variation and str(product.variation_name) != str(new_variation):
+            ProductEditHistory.objects.create(
+                product=product,
+                field="variation_name",
+                old_value=product.variation_name,
+                new_value=new_variation,
+            )
+            product.variation_name = new_variation
 
-            # ✅ Track name changes
-            if new_name and str(product.name) != str(new_name):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="name",
-                    old_value=product.name,
-                    new_value=new_name,
-                )
-                product.name = new_name
+        # ✅ Track name changes
+        if new_name and str(product.name) != str(new_name):
+            ProductEditHistory.objects.create(
+                product=product,
+                field="name",
+                old_value=product.name,
+                new_value=new_name,
+            )
+            product.name = new_name
 
-            # ✅ Track price changes
-            if new_price and str(product.price) != str(new_price):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="price",
-                    old_value=product.price,
-                    new_value=new_price,
-                )
-                product.price = new_price
+        # ✅ Track price changes
+        if new_price and str(product.price) != str(new_price):
+            ProductEditHistory.objects.create(
+                product=product,
+                field="price",
+                old_value=product.price,
+                new_value=new_price,
+            )
+            product.price = new_price
 
-            # ✅ Track stocks changes
-            if new_stocks and str(product.stocks) != str(new_stocks):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="stocks",
-                    old_value=product.stocks,
-                    new_value=new_stocks,
-                )
-                product.stocks = new_stocks
+        # ✅ Track stocks changes
+        if new_stocks and str(product.stocks) != str(new_stocks):
+            ProductEditHistory.objects.create(
+                product=product,
+                field="stocks",
+                old_value=product.stocks,
+                new_value=new_stocks,
+            )
+            product.stocks = new_stocks
 
-            # ✅ Track description changes
-            if new_description and str(product.description or "") != str(new_description):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="description",
-                    old_value=product.description or "",
-                    new_value=new_description,
-                )
-                product.description = new_description
+        # ✅ Track description changes
+        if new_description and str(product.description or "") != str(new_description):
+            ProductEditHistory.objects.create(
+                product=product,
+                field="description",
+                old_value=product.description or "",
+                new_value=new_description,
+            )
+            product.description = new_description
 
-            product.save()  # ✅ Save before retrieving .url
+        product.save()  # ✅ Save before retrieving .url
 
-            # ✅ Ensure correct image URL after saving
-            image_url = product.image.url if product.image else None
+        # ✅ Ensure correct image URL after saving
+        image_url = product.image.url if product.image else None
 
+        # ✅ Check if this is an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True,
                 'message': 'Product updated successfully.',
@@ -4864,84 +4866,16 @@ def edit_product_price(request):
                     'image_url': image_url,
                 }
             })
-
-        # ✅ Handle non-AJAX form submissions
-        elif request.method == 'POST':
-            product_id = request.POST.get('product_id')
-            new_price = request.POST.get('new_price')
-            new_stocks = request.POST.get('new_stocks')
-            new_description = request.POST.get('new_description')
-            new_name = request.POST.get('new_name')
-            new_variation = request.POST.get('new_variation')
-            new_image = request.FILES.get('new_image')
-
-            product = Products.objects.get(id=product_id)
-
-            # ✅ Handle image upload
-            if new_image:
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="image",
-                    old_value=product.image.url if product.image else "None",
-                    new_value=new_image.name,
-                )
-                product.image = new_image
-
-            if new_variation and str(product.variation_name) != str(new_variation):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="variation_name",
-                    old_value=product.variation_name,
-                    new_value=new_variation,
-                )
-                product.variation_name = new_variation
-
-            if new_name and str(product.name) != str(new_name):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="name",
-                    old_value=product.name,
-                    new_value=new_name,
-                )
-                product.name = new_name
-
-            if new_price and str(product.price) != str(new_price):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="price",
-                    old_value=product.price,
-                    new_value=new_price,
-                )
-                product.price = new_price
-
-            if new_stocks and str(product.stocks) != str(new_stocks):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="stocks",
-                    old_value=product.stocks,
-                    new_value=new_stocks,
-                )
-                product.stocks = new_stocks
-
-            if new_description and str(product.description or "") != str(new_description):
-                ProductEditHistory.objects.create(
-                    product=product,
-                    field="description",
-                    old_value=product.description or "",
-                    new_value=new_description,
-                )
-                product.description = new_description
-
-            product.save()
+        else:
+            # ✅ Handle regular form submission
             messages.success(request, "Product updated successfully.")
-
             return redirect('inventory')
 
-        else:
-            return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=400)
-
     except Products.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Product not found.'}, status=404)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Product not found.'}, status=404)
+        messages.error(request, "Product not found.")
+        return redirect('inventory')
 
     except Exception as e:
         # Fallback for both AJAX and standard requests
