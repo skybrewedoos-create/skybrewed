@@ -606,7 +606,9 @@ def send_order_status_email(recipient_email, order_code, status, orders, rejecti
     elif status.lower() == "accepted":
         message_content = f"""
         <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; font-weight: bold; line-height: 1.6;">Good news! Your order has been ACCEPTED and is being PROCESSED.</p>
-        <p style="padding-left: 20px; padding-right:20px; font-size: 13px; color: #555; margin-top: 2px;">We are working to get your order ready for shipment. Stay tuned for updates.</p>
+        <p style="padding: 0 20px; font-size: 14px; color: #555; margin: 5px 0 10px; line-height: 1.5;">
+            We are processing your order(s). Please stay tuned for updates.
+        </p>
         """
     elif status == "Preparing":
         message_content = f"""
@@ -620,7 +622,7 @@ def send_order_status_email(recipient_email, order_code, status, orders, rejecti
     elif status == "Ready for Pickup":
         message_content = f"""
         <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; font-weight: bold; line-height: 1.6;">Your order is now READY FOR PICK UP!</p>
-        <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; margin-top: 10px;">Please show this email including your order code.</p>
+        <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; margin-top: 10px;">Please show this email including your order code for confirmation.</p>
         """
     elif status == "Out for Delivery":
         message_content = f"""
@@ -730,7 +732,7 @@ def send_order_status_email(recipient_email, order_code, status, orders, rejecti
 
                     <!-- Footer -->
                     <tr>
-                    <td style="padding: 20px; background-color: #f5f5f5; text-align: center; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                    <td style="padding: 20px; background-color: #fafafa; color: #333; text-align: center; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
                             <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0" width="100%" style="text-align: center;">
                                 <tr>
                                     <td style="color: {customization.button_text_color}; font-size: 13px; line-height: 1.8; padding: 0 15px;">
@@ -769,7 +771,6 @@ def send_order_status_email(recipient_email, order_code, status, orders, rejecti
         print(f"✅ Email sent to {recipient_email}")
     except Exception as e:
         print(f"❌ Failed to send email: {e}")
-
 
 @csrf_exempt
 def update_order_status(request):
@@ -956,7 +957,9 @@ def send_email_notification(recipient_email, status, order_code, orders, rejecti
     elif status.lower() == "accepted":
         message_content = f"""
         <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; font-weight: bold; line-height: 1.6;">Good news! Your order has been ACCEPTED and is being PROCESSED.</p>
-        <p style="padding-left: 20px; padding-right:20px; font-size: 13px; color: #555; margin-top: 2px;">We are working to get your order ready for shipment. Stay tuned for updates.</p>
+        <p style="padding: 0 20px; font-size: 14px; color: #555; margin: 5px 0 10px; line-height: 1.5;">
+            We are processing your order(s). Please stay tuned for updates.
+        </p>
         """
     elif status == "Preparing":
         message_content = f"""
@@ -970,7 +973,7 @@ def send_email_notification(recipient_email, status, order_code, orders, rejecti
     elif status == "Ready for Pickup":
         message_content = f"""
         <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; font-weight: bold; line-height: 1.6;">Your order is now READY FOR PICK UP!</p>
-        <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; margin-top: 10px;">Please show this email including your order code.</p>
+        <p style="padding-left: 20px; padding-right:20px; font-size: 15px; color: #555; margin-top: 10px;">Please show this email including your order code for confirmation.</p>
         """
     elif status == "Out for Delivery":
         message_content = f"""
@@ -1080,7 +1083,7 @@ def send_email_notification(recipient_email, status, order_code, orders, rejecti
 
                     <!-- Footer -->
                     <tr>
-                    <td style="padding: 20px; background-color: #f5f5f5; text-align: center; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                    <td style="padding: 20px; background-color: #fafafa; color: #333; text-align: center; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
                             <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0" width="100%" style="text-align: center;">
                                 <tr>
                                     <td style="color: {customization.button_text_color}; font-size: 13px; line-height: 1.8; padding: 0 15px;">
@@ -1983,7 +1986,8 @@ def force_change(request):
                 
                         <!-- Paragraph -->
                         <p style="font-size: 16px; color: #fff; line-height: 1.6; margin: 0 0 30px; text-align: center;">
-                            You recently updated your email address. Please confirm it below to activate your account and continue using our services.
+                            You recently updated your email address. Please confirm it below to activate your account and continue using our services. 
+                            <strong style="color: #ffcc00;">THIS IS FOR ONE-TIME USE ONLY.</strong>
                         </p>
                 
                         <!-- Button -->
@@ -2356,6 +2360,7 @@ def register_user(request):
                     <!-- Greeting -->
                     <p style="text-align: center; font-size: 16px; line-height: 1.6; color: #ffffff;">
                         To complete your registration, please click the button below to verify your email address and activate your account.
+                        <strong style="color: #ffcc00;">THIS IS FOR ONE-TIME USE ONLY.</strong>
                     </p>
             
                     <!-- Button as table (email-friendly) -->
@@ -5655,7 +5660,8 @@ def create_staff_account(request):
 
                     <!-- Greeting -->
                     <p style="text-align: center; font-size: 16px; line-height: 1.6; color: #ffffff;">
-                        Hello {first_name}, please verify your email to activate your account:
+                        Hello {first_name}, please verify your email to activate your account
+                        <strong style="color: #ffcc00;">THIS IS FOR ONE-TIME USE ONLY.</strong>
                     </p>
 
                     <!-- Button as table (email-friendly) -->
