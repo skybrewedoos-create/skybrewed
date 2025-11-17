@@ -185,7 +185,7 @@
         }
 
         .btn {
-            padding: 15px;
+            padding: 10px;
             font-weight: 600;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: none;
@@ -1154,16 +1154,6 @@
     <div class="container-fluid">
         <div class="container">
 
-            <!-- Apply Discount Button (in main inventory page) -->
-            <div class="mb-3 text-end">
-                <button type="button" class="btn btn-primary" onclick="openDiscountModal()">
-                    <i class="fas fa-tags me-2"></i>Apply Discount
-                </button>
-                <button type="button" class="btn btn-warning" onclick="openRevertModal()" id="revertDiscountBtn" style="display: none;">
-                    <i class="fas fa-undo me-2"></i>Revert Discount
-                </button>
-            </div>
-
             <!-- Apply Discount Modal -->
             <div class="modal fade" id="discountModal" tabindex="-1" aria-labelledby="discountModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1183,6 +1173,15 @@
                             placeholder="Enter discount percentage (e.g., 10)" 
                             min="0" max="100" step="1">
                         <small class="text-muted">Enter whole numbers only (decimals will be ignored)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-tag me-2"></i>Already Discounted Categories
+                        </label>
+                        <ul id="alreadyDiscountedList" class="list-group">
+                            <!-- JS will fill this -->
+                        </ul>
                     </div>
             
                     <div class="mb-3">
@@ -1211,7 +1210,6 @@
                     </div>
                     </div>
                     <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="applyDiscount()">
                         <i class="fas fa-check me-2"></i>Apply Discount
                     </button>
@@ -1256,7 +1254,6 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="button" class="btn btn-warning" onclick="revertDiscount()">
                                 <i class="fas fa-undo me-2"></i>Revert to Original Prices
                             </button>
@@ -1465,7 +1462,7 @@
             </form>
             </div>
 
-            <!-- Card Containing Search Functionality and Category Tabs -->
+            <!-- Card Containing Search, Category, and Discount Button -->
             <div class="sc-card">
                 <div class="row g-2 align-items-center">
                     <!-- Search Bar -->
@@ -1485,19 +1482,22 @@
                     <div class="col-12 col-md-5">
                         <div class="dropdown category-dropdown">
                             <button
-                                class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="categoryDropdownTabs" data-bs-toggle="dropdown" aria-expanded="false" title="All">
+                                class="btn btn-outline-secondary dropdown-toggle w-100"
+                                type="button"
+                                id="categoryDropdownTabs"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                title="All"
+                            >
                                 <span id="categoryDropdownLabel">All</span>
                             </button>
 
                             <ul class="dropdown-menu w-100" aria-labelledby="categoryDropdownTabs">
                                 <li>
-                                    <input type="text" id="categorySearchInput" class="form-control" placeholder="Search category..." onkeyup="filterCategoryList()"
-                                    >
+                                    <input type="text" id="categorySearchInput" class="form-control" placeholder="Search category..." onkeyup="filterCategoryList()">
                                 </li>
                                 <li>
-                                    <a class="dropdown-item active" onclick="filterProductsByCategory('all', this)">
-                                        All
-                                    </a>
+                                    <a class="dropdown-item active" onclick="filterProductsByCategory('all', this)">All</a>
                                 </li>
                                 {% for category in categories %}
                                     <li>
@@ -1508,6 +1508,18 @@
                                 {% endfor %}
                             </ul>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Apply + Revert Button Row -->
+                <div class="row mt-2">
+                    <div id="discountBtnContainer" class="col-12 d-flex gap-2">
+                        <button type="button" class="btn btn-primary flex-grow-1" id="applyDiscountBtn" onclick="openDiscountModal()">
+                            <i class="fas fa-tags me-2"></i>Apply Discount
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="openRevertModal()" id="revertDiscountBtn" style="display: none;">
+                            <i class="fas fa-undo me-2"></i>Revert Discount
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1843,7 +1855,6 @@
 
         <!-- Modal Footer -->
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-success">Save Changes</button>
         </div>
       </form>
@@ -1874,8 +1885,23 @@
 </div>
 
 <script>
+    function toggleRevertButton(show) {
+        const revertBtn = document.getElementById('revertDiscountBtn');
+        const applyBtn = document.getElementById('applyDiscountBtn');
+        const container = document.getElementById('discountBtnContainer');
 
-    
+        if (show) {
+            revertBtn.style.display = 'inline-block';
+            container.classList.remove('col-12');
+            container.classList.add('col-md-6'); // container takes half width when both buttons are visible
+            applyBtn.classList.remove('flex-grow-1'); // Apply shrinks to fit beside Revert
+        } else {
+            revertBtn.style.display = 'none';
+            container.classList.remove('col-md-6');
+            container.classList.add('col-12'); // container full width when Revert hidden
+            applyBtn.classList.add('flex-grow-1'); // Apply fills the container
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
         const productNameInput = document.getElementById('product_name');
@@ -2341,6 +2367,15 @@
 
     document.getElementById("editImageDropArea").addEventListener("click", function () {
     document.getElementById("editProductImage").click();
+});
+
+/* ✅ ADD THIS AT THE VERY BOTTOM */
+document.addEventListener("DOMContentLoaded", () => {
+    fetch("/check_original_prices/")
+        .then(res => res.json())
+        .then(data => {
+            toggleRevertButton(data.has_original_prices);
+        });
 });
 
 // Live preview when uploading
@@ -2959,8 +2994,30 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 // Open Revert Modal
 function openRevertModal() {
-    const modal = new bootstrap.Modal(document.getElementById('revertModal'));
-    modal.show();
+    fetch('/check-original-prices/')
+    .then(response => response.json())
+    .then(data => {
+        const modal = new bootstrap.Modal(document.getElementById('revertModal'));
+
+        // First clear all
+        document.querySelectorAll('.revert-category-check').forEach(cb => {
+            cb.checked = false;
+        });
+
+        if (data.discounted_categories && data.discounted_categories.length > 0) {
+            data.discounted_categories.forEach(catId => {
+                const checkbox = document.getElementById(`revertCat${catId}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+
+        modal.show();
+    })
+    .catch(err => {
+        console.error('Error loading discounted categories:', err);
+    });
 }
 
 // Check if there are original prices stored and show/hide revert button
@@ -2986,6 +3043,43 @@ function checkOriginalPrices() {
 // Open Discount Modal
 function openDiscountModal() {
     const modal = new bootstrap.Modal(document.getElementById('discountModal'));
+
+    // Clear old list
+    const list = document.getElementById('alreadyDiscountedList');
+    list.innerHTML = "<li class='list-group-item text-muted'>Loading...</li>";
+
+    fetch('/check-original-prices/')
+        .then(res => res.json())
+        .then(data => {
+            list.innerHTML = ""; // Clear
+
+            if (data.category_discounts && Object.keys(data.category_discounts).length > 0) {
+                for (const [categoryId, percentage] of Object.entries(data.category_discounts)) {
+                    const categoryLabel = document.querySelector(`label[for="discountCat${categoryId}"]`);
+                    const categoryName = categoryLabel ? categoryLabel.textContent.trim() : `Category ${categoryId}`;
+
+                    list.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            ${categoryName}
+                            <span class="badge bg-primary rounded-pill">${percentage}%</span>
+                        </li>
+                    `;
+                }
+            } else {
+                list.innerHTML = `
+                    <li class="list-group-item text-muted">
+                        No discounted categories yet.
+                    </li>
+                `;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            list.innerHTML = `
+                <li class="list-group-item text-danger">Error loading discounted categories</li>
+            `;
+        });
+
     modal.show();
 }
 
