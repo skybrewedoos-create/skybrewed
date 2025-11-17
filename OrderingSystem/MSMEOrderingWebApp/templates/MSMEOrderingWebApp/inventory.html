@@ -2381,18 +2381,41 @@ document.getElementById("editProductImage").addEventListener("change", function 
         stockGroup.style.display = isTrackingEnabled ? "block" : "none";
         stockInput.required = isTrackingEnabled;
 
-        // Clear file input
+        // Reset file input
         const fileInput = document.getElementById("editProductImage");
         if (fileInput) fileInput.value = "";
 
         const preview = document.getElementById("editImagePreview");
         const placeholder = document.getElementById("editImagePlaceholder");
 
-        // Find image from table row
-        let imgElement = document.querySelector(`tr[data-group="single-${productId}"] img`);
-        if (!imgElement) {
-            imgElement = document.querySelector(`tr[data-product-id="${productId}"] img`);
+        /* ------------- FIXED IMAGE DETECTION FOR VARIATIONS ------------- */
+
+        // 1. Find the row of the clicked product
+        let productRow = document.querySelector(`tr [data-product-id="${productId}"]`);
+        if (productRow) productRow = productRow.closest("tr");
+
+        let imgElement = null;
+
+        if (productRow) {
+            // A. If the row itself contains an image (single products)
+            imgElement = productRow.querySelector("img");
+
+            if (!imgElement) {
+                // B. Try finding the group parent (for products with variations)
+                const groupName = productRow.getAttribute("data-group");
+
+                if (groupName && groupName.startsWith("group-")) {
+                    // Find the FIRST row of that group
+                    const groupFirstRow = document.querySelector(`tr[data-group="${groupName}"] img`);
+
+                    if (groupFirstRow) {
+                        imgElement = groupFirstRow;
+                    }
+                }
+            }
         }
+
+        /* ------------- APPLY IMAGE OR PLACEHOLDER ------------- */
 
         if (imgElement && imgElement.src) {
             preview.src = imgElement.src;
@@ -2400,14 +2423,16 @@ document.getElementById("editProductImage").addEventListener("change", function 
             placeholder.style.display = "none";
         } else {
             preview.style.display = "none";
-            placeholder.style.display = "block";
+            placeholder.style.display = "flex";
+            placeholder.innerHTML = `
+                <i class="fas fa-image" style="font-size: 50px; opacity: 0.5;"></i>
+                <p class="mt-2 fw-bold text-muted">No image uploaded</p>
+            `;
         }
 
         // Show modal
         new bootstrap.Modal(document.getElementById("editModal")).show();
     }
-
-
 
     // ✅ Close Edit Modal
     function closeEditModal() {
