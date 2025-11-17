@@ -60,6 +60,7 @@ from django.core.cache import cache
 from django.core.paginator import Paginator
 
 
+
 @login_required_session(allowed_roles=['owner'])
 def apply_category_discount(request):
     if request.method == 'POST':
@@ -90,29 +91,38 @@ def apply_category_discount(request):
 
             products = Products.objects.filter(category__in=valid_categories)
 
-            # Use cache with owner-specific key to persist across logins
+            # Use cache with owner-specific key
             cache_key = f'original_prices_{owner_id}'
-            
-            # Get existing original prices from cache or initialize empty dict
             original_prices = cache.get(cache_key, {})
+
+            # Ensure structure exists
+            if "products" not in original_prices:
+                original_prices["products"] = {}
+
+            if "category_discounts" not in original_prices:
+                original_prices["category_discounts"] = {}
 
             updated_products = []
             updated_count = 0
 
             for product in products:
                 product_id = str(product.id)
-                
-                # Store original price ONLY if not already stored
-                if product_id not in original_prices:
-                    original_prices[product_id] = {
-                        'price': str(product.price),
-                        'category_id': product.category.id
+                category_id = product.category.id
+
+                # Save original product price if not stored
+                if product_id not in original_prices["products"]:
+                    original_prices["products"][product_id] = {
+                        "price": str(product.price),
+                        "category_id": category_id
                     }
 
+                # Save category discount
+                original_prices["category_discounts"][str(category_id)] = discount_percentage
+
+                # Calculate new price
                 old_price = product.price
                 discount_multiplier = Decimal(100 - discount_percentage) / Decimal(100)
-                # Use floor division to remove decimals - just flat integer
-                new_price = int(old_price * discount_multiplier)
+                new_price = int(old_price * discount_multiplier)  # floor to integer
 
                 product.price = new_price
                 product.save()
@@ -121,27 +131,27 @@ def apply_category_discount(request):
                     'id': product_id,
                     'old_price': str(old_price),
                     'new_price': str(new_price),
-                    'original_price': original_prices[product_id]['price']
+                    'original_price': original_prices["products"][product_id]['price']
                 })
                 updated_count += 1
 
-            # Save original prices to cache with 2 month timeout (60 days)
-            cache.set(cache_key, original_prices, timeout=60*60*24*60)  # 60 days in seconds
+            # Save to cache for 60 days
+            cache.set(cache_key, original_prices, timeout=60*60*24*60)
 
             return JsonResponse({
                 'success': True,
                 'message': f'Successfully applied {discount_percentage}% discount to {updated_count} product(s)',
                 'updated_products': updated_products,
-                'has_original_prices': True
+                'has_original_prices': True,
+                'category_discounts': original_prices["category_discounts"]
             })
 
         except Exception as e:
             import traceback
             print(traceback.format_exc())
             return JsonResponse({'success': False, 'error': str(e)})
-    
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 @login_required_session(allowed_roles=['owner'])
 def revert_category_discount(request):
@@ -160,7 +170,7 @@ def revert_category_discount(request):
 
             cache_key = f'original_prices_{owner_id}'
             original_prices = cache.get(cache_key, {})
-            if not original_prices:
+            if not original_prices or "products" not in original_prices:
                 return JsonResponse({'success': False, 'error': 'No original prices found. Cannot revert.'})
 
             try:
@@ -176,10 +186,10 @@ def revert_category_discount(request):
 
             for product in products:
                 product_id = str(product.id)
-                
-                if product_id in original_prices:
+
+                if product_id in original_prices["products"]:
                     current_price = product.price
-                    original_price = Decimal(original_prices[product_id]['price'])
+                    original_price = Decimal(original_prices["products"][product_id]['price'])
 
                     product.price = original_price
                     product.save()
@@ -191,7 +201,19 @@ def revert_category_discount(request):
                     })
                     reverted_count += 1
 
-                    del original_prices[product_id]  # remove from cache dict
+                    # Remove product from cache after reverting
+                    del original_prices["products"][product_id]
+
+            # Optionally, remove category discounts if no products remain in that category
+            for cat_id in category_ids:
+                str_cat_id = str(cat_id)
+                # Remove category discount only if none of its products remain
+                if str_cat_id in original_prices.get("category_discounts", {}):
+                    still_has_products = any(
+                        p_info["category_id"] == cat_id for p_info in original_prices["products"].values()
+                    )
+                    if not still_has_products:
+                        del original_prices["category_discounts"][str_cat_id]
 
             # Update cache after reverting
             cache.set(cache_key, original_prices, timeout=60*60*24*60)  # 60 days
@@ -200,19 +222,18 @@ def revert_category_discount(request):
                 'success': True,
                 'message': f'Successfully reverted {reverted_count} product(s)',
                 'reverted_products': reverted_products,
-                'has_original_prices': len(original_prices) > 0
+                'has_original_prices': len(original_prices.get("products", {})) > 0
             })
 
         except Exception as e:
             import traceback
             print(traceback.format_exc())
             return JsonResponse({'success': False, 'error': str(e)})
-    
+
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 @login_required_session(allowed_roles=['owner'])
 def check_original_prices(request):
-    """Check if there are any original prices stored (cache-based)"""
     try:
         owner_id = request.session.get('owner_id')
         if not owner_id:
@@ -220,11 +241,18 @@ def check_original_prices(request):
         
         cache_key = f'original_prices_{owner_id}'
         original_prices = cache.get(cache_key, {})
-        
+
+        products_saved = len(original_prices.get("products", {})) > 0
+        categories_saved = len(original_prices.get("category_discounts", {})) > 0
+
+        has_original = products_saved or categories_saved
+
         return JsonResponse({
-            'has_original_prices': len(original_prices) > 0,
-            'count': len(original_prices)
+            "has_original_prices": has_original,
+            "discounted_categories": list(original_prices.get("category_discounts", {}).keys()),
+            "category_discounts": original_prices.get("category_discounts", {})
         })
+
     except Exception as e:
         return JsonResponse({'has_original_prices': False, 'error': str(e)})
 
