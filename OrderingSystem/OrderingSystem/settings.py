@@ -20,11 +20,13 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "insecure-fallback-key")
 
 DEBUG = os.environ.get("DEBUG", "False").lower() in ["true", "1"]
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "skybrewed.online,www.skybrewed.online,skybrewed.onrender.com").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "creativezone.onrender.com,creativezone.online,www.creativezone.online").split(",")
 
 # CSRF Protection for HTTPS
 CSRF_TRUSTED_ORIGINS = [
-    'https://skybrewed.onrender.com',
+    'https://creativezone.onrender.com',
+    'https://creativezone.online',
+    'https://www.creativezone.online',
 ]
 
 # Add your local development origins if needed
@@ -111,6 +113,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'MSMEOrderingWebApp.context_processors.cart_count',
             ],
         },
     },
@@ -176,6 +179,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
+
 # Detect Render environment
 IS_RENDER = os.environ.get('RENDER', False)
 
@@ -183,7 +187,7 @@ if IS_RENDER:
     # CRITICAL FOR RENDER
     SECURE_SSL_REDIRECT = False  # Render handles SSL
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ALLOWED_HOSTS = ['skybrewed.online', 'www.skybrewed.online', 'skybrewed.onrender.com']
+    ALLOWED_HOSTS = ['creativezone.onrender.com', 'creativezone.online', 'www.creativezone.online']
     DEBUG = False
 else:
     # Local development
@@ -207,4 +211,3 @@ CACHES = {
         'LOCATION': 'my_cache_table',
     }
 }
-
