@@ -24,9 +24,9 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "skybrewed.onrender.com,skybrewe
 
 # CSRF Protection for HTTPS
 CSRF_TRUSTED_ORIGINS = [
-    'https://creativezone.onrender.com',
-    'https://creativezone.online',
-    'https://www.creativezone.online',
+    'https://skybrewed.onrender.com',
+    'https://skybrewed.online',
+    'https://www.skybrewed.online',
 ]
 
 # Add your local development origins if needed
@@ -187,7 +187,7 @@ if IS_RENDER:
     # CRITICAL FOR RENDER
     SECURE_SSL_REDIRECT = False  # Render handles SSL
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    ALLOWED_HOSTS = ['creativezone.onrender.com', 'creativezone.online', 'www.creativezone.online']
+    ALLOWED_HOSTS = ['skybrewed.onrender.com', 'skybrewed.online', 'www.skybrewed.online']
     DEBUG = False
 else:
     # Local development
